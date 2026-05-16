@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -10,18 +11,17 @@ const port = 5000;
 /* =========================
    MANDATORY LOGGER MIDDLEWARE
 ========================= */
-const customLogger = (req, res, next) => {
+const customLogger = async (req, res, next) => {
 
     const time = new Date().toISOString();
 
     console.log(`[${time}] ${req.method} -> ${req.url}`);
 
-    // FIRE-AND-FORGET LOGGING
-    Log(
+    await Log(
         "backend",
         "info",
-        "handler",
-        `Request received for ${req.url}`
+        "middleware",
+        `${req.method} request received for ${req.url}`
     );
 
     next();
@@ -74,12 +74,14 @@ app.get('/api/priority-notifications', async (req, res) => {
 
         console.log('-> External API Connected');
 
-        // NON-BLOCKING LOGGING
-        Log(
+        /* =========================
+           REQUIRED LOGGING CALL
+        ========================= */
+        await Log(
             "backend",
             "info",
-            "handler",
-            "Notifications fetched successfully"
+            "service",
+            "External notifications fetched successfully"
         );
 
         /* =========================
@@ -215,11 +217,13 @@ app.get('/api/priority-notifications', async (req, res) => {
 
         console.log('===================================================\n');
 
-        // NON-BLOCKING ERROR LOGGING
-        Log(
+        /* =========================
+           ERROR LOGGING
+        ========================= */
+        await Log(
             "backend",
             "error",
-            "handler",
+            "service",
             err.message
         );
 
