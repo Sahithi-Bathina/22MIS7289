@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const crypto = require('crypto');
+const Log = require('./loggingMiddleware');
 
 const app = express();
 const port = 5000;
@@ -10,8 +11,19 @@ const port = 5000;
    MANDATORY LOGGER MIDDLEWARE
 ========================= */
 const customLogger = (req, res, next) => {
+
     const time = new Date().toISOString();
+
     console.log(`[${time}] ${req.method} -> ${req.url}`);
+
+    // FIRE-AND-FORGET LOGGING
+    Log(
+        "backend",
+        "info",
+        "handler",
+        `Request received for ${req.url}`
+    );
+
     next();
 };
 
@@ -54,7 +66,7 @@ app.get('/api/priority-notifications', async (req, res) => {
             'http://4.224.186.213/evaluation-service/notifications',
             {
                 headers: {
-                    Authorization: 'SfFuWg'
+                    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJzYWhpdGhpLjIybWlzNzI4OUB2aXRhcHN0dWRlbnQuYWMuaW4iLCJleHAiOjE3Nzg5MzE4MDAsImlhdCI6MTc3ODkzMDkwMCwiaXNzIjoiQWZmb3JkIE1lZGljYWwgVGVjaG5vbG9naWVzIFByaXZhdGUgTGltaXRlZCIsImp0aSI6IjcwMTIzNWVjLTA3YTQtNDYzNS1iZjk0LTc3NDBjNWQxMzllOCIsImxvY2FsZSI6ImVuLUlOIiwibmFtZSI6ImIgc2FoaXRoaSBjaG91ZGFyeSIsInN1YiI6IjI3NGFkMjlkLTRmOGYtNDNiNC05ZWM0LWNmMjBkYWNlZDM4YSJ9LCJlbWFpbCI6InNhaGl0aGkuMjJtaXM3Mjg5QHZpdGFwc3R1ZGVudC5hYy5pbiIsIm5hbWUiOiJiIHNhaGl0aGkgY2hvdWRhcnkiLCJyb2xsTm8iOiIyMm1pczcyODkiLCJhY2Nlc3NDb2RlIjoiU2ZGdVdnIiwiY2xpZW50SUQiOiIyNzRhZDI5ZC00ZjhmLTQzYjQtOWVjNC1jZjIwZGFjZWQzOGEiLCJjbGllbnRTZWNyZXQiOiJTV3l2c01BYUFVYkRhZFJTIn0.IbxIdfayd65OhE5NGgjBsp6eFjXF7tMTRKDi-zPQOIo`
                 },
                 timeout: 5000
             }
@@ -62,21 +74,32 @@ app.get('/api/priority-notifications', async (req, res) => {
 
         console.log('-> External API Connected');
 
+        // NON-BLOCKING LOGGING
+        Log(
+            "backend",
+            "info",
+            "handler",
+            "Notifications fetched successfully"
+        );
+
         /* =========================
            SAFE ARRAY EXTRACTION
         ========================= */
         let list = [];
 
         if (Array.isArray(apiResponse.data)) {
+
             list = apiResponse.data;
 
         } else if (
             apiResponse.data &&
             Array.isArray(apiResponse.data.notifications)
         ) {
+
             list = apiResponse.data.notifications;
 
         } else {
+
             list =
                 Object.values(apiResponse.data).find(val =>
                     Array.isArray(val)
@@ -134,12 +157,13 @@ app.get('/api/priority-notifications', async (req, res) => {
                 (now - itemTime) / (1000 * 60)
             );
 
-            // Priority Equation
+            // PRIORITY EQUATION
             const finalScore =
                 (weight * 100) -
                 (ageMinutes * 0.05);
 
             return {
+
                 id:
                     item.ID ||
                     item.id ||
@@ -180,13 +204,24 @@ app.get('/api/priority-notifications', async (req, res) => {
         console.log('\n================ BACKEND ERROR LOG ================');
 
         if (err.response) {
+
             console.log('Status Code:', err.response.status);
             console.log('Response Data:', err.response.data);
+
         } else {
+
             console.log('Error Message:', err.message);
         }
 
         console.log('===================================================\n');
+
+        // NON-BLOCKING ERROR LOGGING
+        Log(
+            "backend",
+            "error",
+            "handler",
+            err.message
+        );
 
         /* =========================
            FALLBACK MOCK DATA
